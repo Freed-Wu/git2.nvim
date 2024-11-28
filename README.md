@@ -87,6 +87,60 @@ Use [luagit2](https://github.com/libgit2/luagit2) to realize a `:Git` in neovim.
   firstly. I believe it can bring more convenience to vim plugin developing and
   start the experiment.
 
+## Dependence
+
+- [libgit2](https://github.com/libgit2/libgit2)
+
+```sh
+# Ubuntu
+sudo apt-get -y install libgit2-dev libgit2
+sudo apt-mark auto libgit2-dev
+# ArchLinux
+sudo pacman -S libgit2
+# Android Termux
+apt-get -y install libgit2
+# Nix
+# use nix-shell to create a virtual environment then build
+# homebrew
+brew tap tonyfettes/homebrew-git2
+brew install libgit2 pkg-config
+# Windows msys2
+pacboy -S --noconfirm pkg-config libgit2 gcc
+```
+
+## Install
+
+### rocks.nvim
+
+#### Command style
+
+```vim
+:Rocks install git2.nvim
+```
+
+#### Declare style
+
+`~/.config/nvim/rocks.toml`:
+
+```toml
+[plugins]
+"git2.nvim" = "scm"
+```
+
+Then
+
+```vim
+:Rocks sync
+```
+
+or:
+
+```sh
+$ luarocks --lua-version 5.1 --local --tree ~/.local/share/nvim/rocks install git2.nvim
+# ~/.local/share/nvim/rocks is the default rocks tree path
+# you can change it according to your vim.g.rocks_nvim.rocks_path
+```
+
 ## Usage
 
 ```vim
