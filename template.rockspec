@@ -32,7 +32,7 @@ if modrev == 'scm' or modrev == 'dev' then
 end
 
 build = {
-  type = 'xmake',
+  type = 'builtin',
   copy_directories = {'scripts', 'plugin'},
   install = {
     conf = {
