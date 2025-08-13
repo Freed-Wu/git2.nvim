@@ -46,8 +46,8 @@ Use [luagit2](https://github.com/libgit2/luagit2) to realize a `:Git` in neovim.
 
 - [vim-flog](https://github.com/rbong/vim-flog): call git process
   **synchronously**. written in vim script.
-- [committia.vim](https://github.com/rhysd/committia.vim): UI for CLI's `git
-  commit`. call git process **synchronously**. written in vim script.
+- [committia.vim](https://github.com/rhysd/committia.vim): UI for CLI's
+  `git commit`. call git process **synchronously**. written in vim script.
 - [nvim-tinygit](https://github.com/chrisgrieser/nvim-tinygit): call git process
   asynchronously. written in lua.
 - [neogit](https://github.com/NeogitOrg/neogit): call git process
