@@ -2,11 +2,19 @@
 
 with pkgs;
 mkShell {
-  name = "tellenc.nvim";
+  name = "git2.nvim";
+  env = {
+    GIT2_INCDIR = "${libgit2.dev}/include";
+    GIT2_LIBDIR = "${libgit2.lib}/lib";
+  };
   buildInputs = [
-    pkg-config
-    stdenv.cc
-    luajit
-    libgit2.dev
+    libgit2
+
+    (luajit.withPackages (
+      p: with p; [
+        busted
+        ldoc
+      ]
+    ))
   ];
 }

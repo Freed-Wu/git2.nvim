@@ -1,24 +1,29 @@
--- luacheck: ignore 111 113
+---wrap `vim.fs` and `vim.fn`
 ---@diagnostic disable: undefined-global
+-- luacheck: ignore 111 113
+local lfs = require "lfs"
 local M = {}
 
----@return string
+---wrap `vim.fn.getcwd()`
+---@return string cwd
 function M.getcwd()
     if vim then
         return vim.fn.getcwd()
     end
-    return require "lfs".currentdir()
+    return lfs.currentdir()
 end
 
+---wrap `vim.fn.isdirectory()`
 ---@param dir string
----@return boolean
+---@return boolean isdir
 function M.isdirectory(dir)
     if vim then
         return vim.fn.isdirectory(dir) == 1
     end
-    return require "lfs".attributes(dir).mode == "directory"
+    return lfs.attributes(dir) and lfs.attributes(dir).mode == "directory"
 end
 
+---wrap `vim.fs.joinpath()`
 ---@param dir string
 ---@param file string
 ---@return string
@@ -29,28 +34,27 @@ function M.joinpath(dir, file)
     return dir .. "/" .. file
 end
 
----@param dir string
+---wrap `vim.fs.dirname()`
+---@param path string
 ---@return string
-function M.dirname(dir)
+function M.dirname(path)
     if vim then
-        return vim.fs.dirname(dir)
+        return vim.fs.dirname(path)
     end
-    local result, _ = dir:gsub("/[^/]+/?$", "")
-    return result
+    return path:match("(.*)/[^/]*$")
 end
 
----@param dir string
+---wrap `vim.fs.basename()`
+---@param path string
 ---@return string
-function M.get_toplevel(dir)
-    while dir ~= "/" do
-        if M.isdirectory(M.joinpath(dir, ".git")) then
-            return dir
-        end
-        dir = M.dirname(dir)
+function M.basename(path)
+    if vim then
+        return vim.fs.basename(path)
     end
-    return ""
+    return path:match("/([^/]*)$")
 end
 
+---wrap `vim.fn.expand()`
 ---@param dir string
 ---@return string
 function M.expand(dir)

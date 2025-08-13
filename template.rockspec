@@ -16,7 +16,7 @@ description = {
   $license
 }
 
-dependencies = { 'lua >= 5.1', 'argparse', 'lua-git2' }
+dependencies = { 'lua >= 5.1', 'argparse', 'mega.cmdparse', 'lua-git2', 'luafilesystem' }
 
 test_dependencies = $test_dependencies
 
@@ -35,8 +35,11 @@ build = {
   type = 'builtin',
   copy_directories = {'scripts', 'plugin'},
   install = {
+    bin = {
+      git2 = 'bin/git2',
+    },
     conf = {
-      ['..'] = 'shell.nix'
+      ['..'] = 'shell.nix',
     },
   },
 }

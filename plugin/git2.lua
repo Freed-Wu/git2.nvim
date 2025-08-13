@@ -1,5 +1,5 @@
 -- luacheck: ignore 111 113
 ---@diagnostic disable: undefined-global
-vim.api.nvim_create_user_command("Git", function(args)
-    require "git2.cmd".git(args.fargs)
-end, { nargs = "*" })
+local cmdparse = require "mega.cmdparse"
+local cmd = require "git2.cmd"
+cmdparse.create_user_command(cmd.get_cmd_parser())

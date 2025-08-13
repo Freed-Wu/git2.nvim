@@ -2,4 +2,4 @@
 set -e
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 
-nix-shell --run 'luarocks install --lua-version 5.1 --force --local lua-git2 GIT2_INCDIR=$(pkg-config --variable=includedir libgit2) GIT2_LIBDIR=$(pkg-config --variable=libdir libgit2)'
+nix-shell --run 'luarocks install --force lua-git2 GIT2_INCDIR=$GIT2_INCDIR GIT2_LIBDIR=$GIT2_LIBDIR'
