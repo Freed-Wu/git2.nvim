@@ -39,7 +39,11 @@ end
 ---@return table
 function M.get_cmd_parser()
     local parser = cmdparse.ParameterParser.new({ name = "Git", help = "a git implemented by lua" })
-    parser:add_parameter({ name = "-C", help = "run as if git was started in given path" })
+    parser:add_parameter({
+        name = "-C",
+        default = M.get_gitdir(utils.getcwd()),
+        help = "run as if git was started in given path"
+    })
     local parsers = parser:add_subparsers({ destination = "command" })
 
     local subparser = parsers:add_parser({
@@ -50,13 +54,11 @@ function M.get_cmd_parser()
     subparser:add_parameter({
         name = "directory",
         required = false,
-        help =
-        "Where to init the repository (optional)"
+        default = utils.getcwd(),
+        help = "Where to init the repository (optional)"
     })
     subparser:set_execute(function(data)
         data.namespace.init = true
-        data.namespace.C = data.namespace.C or M.get_gitdir(utils.getcwd())
-        data.namespace.directory = data.namespace.directory or utils.getcwd()
         M.exe(data.namespace)
     end)
 
@@ -74,7 +76,6 @@ function M.get_cmd_parser()
     })
     subparser:set_execute(function(data)
         data.namespace.add = true
-        data.namespace.C = data.namespace.C or M.get_gitdir(utils.getcwd())
         M.exe(data.namespace)
     end)
 
