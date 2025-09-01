@@ -53,7 +53,6 @@ function M.get_cmd_parser()
     })
     subparser:add_parameter({
         name = "directory",
-        required = false,
         default = utils.getcwd(),
         help = "Where to init the repository (optional)"
     })
