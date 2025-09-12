@@ -1,2 +1,2 @@
 #!/usr/bin/env lua
-require'git2.cmd'.main(arg)
+require'git2.main'.main(arg)

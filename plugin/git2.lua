@@ -1,5 +1,7 @@
 -- luacheck: ignore 111 113
 ---@diagnostic disable: undefined-global
 local cmdparse = require "mega.cmdparse"
-local cmd = require "git2.cmd"
-cmdparse.create_user_command(cmd.get_cmd_parser())
+local data = require "git2.data".get()
+local exe = require "git2.main".exe
+local parser = require "git2.argparse".get_cmd_parser(data, exe)
+cmdparse.create_user_command(parser)
