@@ -148,11 +148,10 @@ $ luarocks --lua-version 5.1 --local --tree ~/.local/share/nvim/rocks install gi
 :Git init
 :cd subdir
 :Git -C .. add %
+:Git rm --cached %
 ```
 
 ## TODO
 
 - full CLI APIs. wait [upstream](https://github.com/libgit2/luagit2/issues/10)
-- completion of `:Git <TAB>`, wait
-  [upstream](https://github.com/mpeterv/argparse/issues/28)
 - UI for CLI's `git commit`, vim's `:Git blame`, `:Git status`, ...
