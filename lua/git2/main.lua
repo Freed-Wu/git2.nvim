@@ -55,14 +55,15 @@ end
 ---@param args table
 function M.exe(args)
     if args['rev-parse'] then
-        local git_dir
+        local git_dir = fs.getcwd()
         if args.git_dir then
             git_dir = '.'
-        elseif args.absolute_git_dir then
-            git_dir = fs.getcwd()
         end
-        if git_dir then
-            git_dir = fs.root(git_dir, '.git')
+        git_dir = fs.root(git_dir, '.git')
+        if args.is_bare_repository then
+            local repo = git2.Repository.open(git_dir)
+            print(repo:is_bare())
+        else
             print(git_dir)
         end
         return
@@ -71,8 +72,8 @@ function M.exe(args)
         git2.Repository.init(args.directory, 0)
         return
     end
-    local git_dir = args.C
-    local repo = git2.Repository.open(fs.expand(git_dir))
+    local git_dir = fs.expand(args.C)
+    local repo = git2.Repository.open(git_dir)
     local idx = repo:index()
 
     if args.add then

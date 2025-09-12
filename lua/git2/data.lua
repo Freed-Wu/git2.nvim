@@ -83,12 +83,18 @@ function M.get()
             {
                 name = "--git-dir",
                 action = "store_true",
-                help = "show path of .git"
+                help = "Show the path to the .git directory. \
+The path shown, when relative, is relative to the current working directory."
             },
             {
                 name = "--absolute-git-dir",
                 action = "store_true",
-                help = "show path of .git"
+                help = "Like --git-dir, but its output is always the canonicalized absolute path."
+            },
+            {
+                name = "--is-bare-repository",
+                action = "store_true",
+                help = 'When the repository is bare print "true", otherwise "false".'
             },
         }
     }
