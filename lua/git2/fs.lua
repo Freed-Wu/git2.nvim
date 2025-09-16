@@ -48,14 +48,13 @@ function M.root(source, marker)
 end
 
 ---wrap `vim.fs.joinpath()`
----@param dir string
----@param file string
+---@param ... string
 ---@return string
-function M.joinpath(dir, file)
+function M.joinpath(...)
     if vim then
-        return vim.fs.joinpath(dir, file)
+        return vim.fs.joinpath(...)
     end
-    return dir .. "/" .. file
+    return table.concat({...}, '/')
 end
 
 ---wrap `vim.fs.dirname()`
