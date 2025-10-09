@@ -64,7 +64,7 @@ function M.dirname(path)
     if vim then
         return vim.fs.dirname(path)
     end
-    return path:match("(.*)/[^/]*$")
+    return path:match("(.*)/[^/]*$") or '/'
 end
 
 ---wrap `vim.fs.basename()`
