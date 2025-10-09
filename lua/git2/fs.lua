@@ -74,7 +74,7 @@ function M.basename(path)
     if vim then
         return vim.fs.basename(path)
     end
-    return path:match("/([^/]*)$")
+    return path:match("/([^/]*)$") or '/'
 end
 
 ---wrap `vim.fn.getcwd()`
