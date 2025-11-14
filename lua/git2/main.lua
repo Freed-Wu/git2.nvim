@@ -74,6 +74,10 @@ function M.exe(args)
     end
     local git_dir = fs.expand(args.C)
     local repo = git2.Repository.open(git_dir)
+    if repo == nil then
+        print(args.C .. ' is not a git repository!')
+        return
+    end
     local idx = repo:index()
 
     if args.add then
