@@ -1,5 +1,5 @@
 ---store data for parsers.
-local fs = require "git2.fs"
+local fs = require "vim.fs"
 local M = {}
 
 ---@alias datum
