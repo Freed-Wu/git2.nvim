@@ -1,0 +1,25 @@
+package = "mega.argparse"
+version = "0.0.6"
+lua = ">=5.1"
+
+[description]
+summary = "A library to wrap argparse and mega.cmdparse"
+detailed = ""
+maintainer = "Wu"
+labels = ["argparse", "neovim"]
+homepage = "https://github.com/Freed-Wu/git2.nvim/tree/main/packages/mega.argparse"
+license = 'GPL-3.0'
+
+[source]
+url = "https://github.com/rimeinn/ime.nvim/archive/$(VERSION).zip"
+dir = "ime.nvim-$(VERSION)/packages/$(PACKAGE)"
+
+[dependencies]
+"mega.cmdparse" = " >= 1.2.1"
+argparse = " >= 0.0.1"
+
+[test]
+type = "busted"
+
+[build]
+type = "builtin"

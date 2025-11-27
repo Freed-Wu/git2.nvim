@@ -2,7 +2,7 @@
 local git2 = require "git2"
 local fs = require "vim.fs"
 local fn = require "vim.fn"
-local get_parser = require "git2.argparse".get_parser
+local get_parser = require "mega.argparse".get_parser
 local data = require 'git2.data'.get()
 
 local M = {}

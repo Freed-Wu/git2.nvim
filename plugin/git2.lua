@@ -3,5 +3,5 @@
 local cmdparse = require "mega.cmdparse"
 local data = require "git2.data".get()
 local exe = require "git2.main".exe
-local parser = require "git2.argparse".get_cmd_parser(data, exe)
+local parser = require "mega.argparse".get_cmd_parser(data, exe)
 cmdparse.create_user_command(parser)

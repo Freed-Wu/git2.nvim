@@ -1,4 +1,5 @@
 ---wrap `argparse` and `mega.cmdparse`
+---@module mega.argparse
 local argparse = require "argparse"
 local _, cmdparse = pcall(require, "mega.cmdparse")
 local M = {}
