@@ -11,8 +11,8 @@ homepage = "https://github.com/Freed-Wu/git2.nvim/tree/main/packages/mega.argpar
 license = 'GPL-3.0'
 
 [source]
-url = "https://github.com/rimeinn/ime.nvim/archive/$(VERSION).zip"
-dir = "ime.nvim-$(VERSION)/packages/$(PACKAGE)"
+url = "https://github.com/Freed-Wu/git2.nvim/archive/$(VERSION).zip"
+dir = "git2.nvim-$(VERSION)/packages/$(PACKAGE)"
 
 [dependencies]
 "mega.cmdparse" = " >= 1.2.1"
