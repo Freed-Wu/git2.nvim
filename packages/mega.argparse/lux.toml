@@ -4,7 +4,7 @@ lua = ">=5.1"
 
 [description]
 summary = "A library to wrap argparse and mega.cmdparse"
-detailed = ""
+detailed = "create both argparse.Parser and mega.cmdparse.Parser at the same code"
 maintainer = "Wu"
 labels = ["argparse", "neovim"]
 homepage = "https://github.com/Freed-Wu/git2.nvim/tree/main/packages/mega.argparse"

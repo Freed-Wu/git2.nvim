@@ -62,7 +62,7 @@ end
 function M.main(argv)
     local parser = Parser {
         get_data = require "git2.data".get,
-        callback = require "git2.main".exe
+        callback = M.exe
     }
     parser:parse(argv)
 end
