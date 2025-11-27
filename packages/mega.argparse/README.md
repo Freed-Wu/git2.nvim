@@ -64,6 +64,8 @@ end
 local Parser = require "mega.argparse".Parser
 local parser = Parser {
     data = data,
+    --- or
+    -- get_data = function () return data end,
     callback = exe
 }
 if vim then
