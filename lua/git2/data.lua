@@ -1,5 +1,6 @@
 ---store data for parsers.
 local fs = require "vim.fs"
+local fn = require "vim.fn"
 local M = {}
 
 ---@alias datum
@@ -24,7 +25,7 @@ function M.get()
             },
             {
                 name = "-C",
-                default = fs.root(fs.getcwd(), '.git'),
+                default = fs.root(fn.getcwd(), '.git'),
                 help = "run as if git was started in given path"
             }
         },
@@ -37,7 +38,7 @@ function M.get()
             },
             {
                 name = "directory",
-                default = fs.getcwd(),
+                default = fn.getcwd(),
                 help = "Where to init the repository (optional)"
             }
         },

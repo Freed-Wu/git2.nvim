@@ -11,7 +11,7 @@ local M = {}
 ---@param args table
 function M.exe(args)
     if args['rev-parse'] then
-        local git_dir = fs.getcwd()
+        local git_dir = fn.getcwd()
         if args.git_dir then
             git_dir = '.'
         end
@@ -42,7 +42,7 @@ function M.exe(args)
         end
         for _, file in ipairs(args.file) do
             if file:sub(1, 1) ~= "/" then
-                file = fs.joinpath(fs.getcwd(), file)
+                file = fs.joinpath(fn.getcwd(), file)
             end
             idx:add_all(git2.StrArray(file), 0)
         end
