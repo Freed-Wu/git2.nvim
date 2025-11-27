@@ -1,8 +1,10 @@
 ---wrap `argparse` and `mega.cmdparse`
 ---@module mega.argparse
 local argparse = require "argparse"
-local _, cmdparse = pcall(require, "mega.cmdparse")
-local M = {}
+local ok, cmdparse = pcall(require, "mega.cmdparse")
+local M = {
+    Parser = {}
+}
 
 ---wrap `argparse.Parser.option()` and `argparse.Parser.argument()`
 ---@param parser table
@@ -88,6 +90,42 @@ function M.get_cmd_parser(data, callback)
     end
 
     return parser
+end
+
+---parser
+---@section parser
+
+---@param parser table?
+---@return table parser
+function M.Parser:new(parser)
+    parser = parser or {}
+    parser.data = parser.data or parser.get_data()
+    parser.parser = M.get_parser(parser.data)
+    if ok then
+        parser.cmd_parser = M.get_cmd_parser(parser.data, parser.callback)
+    end
+    setmetatable(parser, {
+        __index = self
+    })
+    return parser
+end
+
+setmetatable(M.Parser, {
+    __call = M.Parser.new
+})
+
+---parse command line arguments
+---@param argv string[]
+---@return any
+function M.Parser:parse(argv)
+    self.parser._name = argv[0]
+    local args = self.parser:parse(argv)
+    return self.callback(args)
+end
+
+---create user command
+function M.Parser:create_user_command(...)
+    cmdparse.create_user_command(self.cmd_parser, ...)
 end
 
 return M

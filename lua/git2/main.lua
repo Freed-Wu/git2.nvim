@@ -2,8 +2,7 @@
 local git2 = require "git2"
 local fs = require "vim.fs"
 local fn = require "vim.fn"
-local get_parser = require "mega.argparse".get_parser
-local data = require 'git2.data'.get()
+local Parser = require "mega.argparse".Parser
 
 local M = {}
 
@@ -61,9 +60,11 @@ end
 ---**entry for git2**
 ---@param argv string[]
 function M.main(argv)
-    data[0][0].name = argv[0]
-    local args = get_parser(data):parse(argv)
-    M.exe(args)
+    local parser = Parser {
+        get_data = require "git2.data".get,
+        callback = require "git2.main".exe
+    }
+    parser:parse(argv)
 end
 
 return M
