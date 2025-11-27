@@ -16,7 +16,7 @@ description = {
   $license
 }
 
-dependencies = { 'lua >= 5.1', 'argparse', 'mega.cmdparse >= 1.2.1', 'lua-git2-tmp', 'luafilesystem', 'platformdirs' }
+dependencies = { 'lua >= 5.1', 'argparse', 'mega.cmdparse >= 1.2.1', 'lua-git2-tmp', 'luafilesystem', 'vim' }
 
 test_dependencies = $test_dependencies
 

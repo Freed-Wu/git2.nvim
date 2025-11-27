@@ -1,7 +1,7 @@
 ---core functions
 local git2 = require "git2"
-local fs = require "platformdirs.fs"
-local fn = require "platformdirs.fn"
+local fs = require "vim.fs"
+local fn = require "vim.fn"
 local get_parser = require "git2.argparse".get_parser
 local data = require 'git2.data'.get()
 
