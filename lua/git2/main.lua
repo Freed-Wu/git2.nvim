@@ -1,7 +1,10 @@
----core functions
+---core functions. only expand path for neovim not shell.
 local git2 = require "git2"
 local fs = require "vim.fs"
 local fn = require "vim.fn"
+---@diagnostic disable: undefined-global
+-- luacheck: ignore 111 113 212
+local expand = vim and fn.expand or function(dir) return dir end
 local Parser = require "mega.argparse".Parser
 
 local M = {}
@@ -27,7 +30,7 @@ function M.exe(args)
         git2.Repository.init(args.directory, 0)
         return
     end
-    local git_dir = fn.expand(args.C)
+    local git_dir = expand(args.C)
     local repo = git2.Repository.open(git_dir)
     if repo == nil then
         print(args.C .. ' is not a git repository!')
@@ -47,7 +50,7 @@ function M.exe(args)
         end
     elseif args.rm then
         for _, file in ipairs(args.file) do
-            file = fn.expand(file)
+            file = expand(file)
             idx:remove(file, 0)
             if not args.cached then
                 os.remove(file)
