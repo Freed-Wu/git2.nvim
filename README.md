@@ -41,6 +41,8 @@ Use [luagit2](https://github.com/libgit2/luagit2) to realize a `:Git` in neovim.
   asynchronously. written in vim script. **stop maintenance**.
 - [vim-gin](https://github.com/lambdalisue/vim-gin): call git process
   asynchronously. written in denojs. same author as vim-gina.
+- [git.nvim](https://github.com/wsdjeg/git.nvim): call git process
+  asynchronously. written in lua.
 
 ### UI
 
