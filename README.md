@@ -143,6 +143,16 @@ $ luarocks --lua-version 5.1 --local --tree ~/.local/share/nvim/rocks install gi
 # you can change it according to your vim.g.rocks_nvim.rocks_path
 ```
 
+### lazy.nvim
+
+```lua
+require("lazy").setup {
+  spec = {
+    { "Freed-Wu/git2.nvim", lazy = false },
+  },
+}
+```
+
 ## Usage
 
 ```vim

@@ -6,19 +6,25 @@ local repo_url = '$repo_url'
 
 rockspec_format = '3.0'
 package = '$package'
-version = modrev ..'-'.. specrev
+if modrev:sub(1, 1) == '$' then
+  modrev = "scm"
+  specrev = "1"
+  repo_url = "https://github.com/Freed-Wu/git2.nvim"
+  package = repo_url:match("/([^/]+)/?$")
+end
+version = modrev .. '-' .. specrev
 
 description = {
   summary = '$summary',
-  detailed = $detailed_description,
-  labels = $labels,
+  detailed = '',
+  labels = { "neovim", "git2" },
   homepage = '$homepage',
-  $license
+  license = 'GPL3',
 }
 
 dependencies = { 'lua >= 5.1', 'mega.argparse', 'vim', 'lua-git2-tmp' }
 
-test_dependencies = $test_dependencies
+test_dependencies = {}
 
 source = {
   url = repo_url .. '/archive/' .. git_ref .. '.zip',
@@ -33,7 +39,7 @@ end
 
 build = {
   type = 'builtin',
-  copy_directories = {'scripts', 'plugin'},
+  copy_directories = { 'scripts', 'plugin' },
   install = {
     bin = {
       git2 = 'bin/git2',
