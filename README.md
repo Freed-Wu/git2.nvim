@@ -163,6 +163,40 @@ require("lazy").setup {
 :Git rm --cached %
 ```
 
+## Integrations
+
+### [vim-startify](https://github.com/mhinz/vim-startify)
+
+```vim
+if has('nvim')
+  function! s:gitModified() abort
+    let files = v:lua.require'git2.status'.ls(v:true)
+    return map(files, "{'line': v:val, 'path': v:val}")
+  endfunction
+
+  function! s:gitUntracked() abort
+    let files = v:lua.require'git2.status'.ls(v:false, v:true)
+    return map(files, "{'line': v:val, 'path': v:val}")
+  endfunction
+
+  let g:startify_lists = [
+        \ {'type': function('s:gitModified'),  'header': ['! Git Modified']},
+        \ {'type': function('s:gitUntracked'), 'header': ['? Git Untracked']},
+        \ ]
+endif
+```
+
+```text
+! Git Modified
+
+   [.a] README.md
+
+? Git Untracked
+
+   [.b] a.txt
+
+```
+
 ## TODO
 
 - full CLI APIs. wait [upstream](https://github.com/libgit2/luagit2/issues/10)

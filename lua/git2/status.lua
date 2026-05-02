@@ -130,7 +130,7 @@ function M.ls(modified, others)
         opts:set_flags(opts:flags() + opts.INCLUDE_UNMODIFIED)
     end
     local _, unstaged_changes = M.get_status(repo, opts)
-    local files = M.ls_files(unstaged_changes, others and M.statuses.WT_NEW or 0)
+    local files = M.ls_files(unstaged_changes, others and M.statuses.WT_NEW or M.statuses.WT_MODIFIED)
     return files
 end
 
