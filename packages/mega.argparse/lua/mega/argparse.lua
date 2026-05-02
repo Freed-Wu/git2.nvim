@@ -25,7 +25,14 @@ end
 ---@param datum datum
 ---@return table p
 function M.add_parameter(parser, datum)
-    local p = M.argument(parser, datum.name, datum.help, datum.default)
+    local name
+    if type(datum.name) == type "" then
+        name = datum.name
+    else
+        ---@diagnostic disable-next-line: param-type-mismatch
+        name = table.concat(datum.name, " ")
+    end
+    local p = M.argument(parser, name, datum.help, datum.default)
     if datum.action == 'store_true' then
         datum.nargs = 0
     end
@@ -81,6 +88,9 @@ function M.get_cmd_parser(data, callback)
     for _, subdata in ipairs(data) do
         local subparser = parsers:add_parser(subdata[0])
         for _, datum in ipairs(subdata) do
+            if type(datum.name) == type {} then
+                table.sort(datum.name, function(a, b) return #a > #b end)
+            end
             subparser:add_parameter(datum)
         end
         subparser:set_execute(function(d)

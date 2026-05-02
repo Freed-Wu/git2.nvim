@@ -5,7 +5,7 @@ local M = {}
 
 ---@alias datum
 ---| {
----    name: string,
+---    name: string | string[],
 ---    help: string,
 ---    default: any,
 ---    nargs: integer | string?,
@@ -97,7 +97,44 @@ The path shown, when relative, is relative to the current working directory."
                 action = "store_true",
                 help = 'When the repository is bare print "true", otherwise "false".'
             },
-        }
+        },
+        {
+            [0] = {
+                name = "status",
+                help = "Show the working tree status"
+            },
+            {
+                name = "--ignored",
+                action = "store_true",
+                help = 'show ignored files as well'
+            },
+            {
+                name = "--untracked-files",
+                default = "all",
+                help = 'show untracked files'
+            },
+        },
+        {
+            [0] = {
+                name = "ls-files",
+                help = "information about files in index/working directory"
+            },
+            {
+                name = { "-o", "--others" },
+                action = "store_true",
+                help = 'show other files in output'
+            },
+            {
+                name = { "-m", "--modified" },
+                action = "store_true",
+                help = 'show modified files in output'
+            },
+            {
+                name = "--exclude-standard",
+                action = "store_true",
+                help = 'skip files in standard Git exclusion lists'
+            },
+        },
     }
 end
 

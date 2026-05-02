@@ -22,7 +22,7 @@ description = {
   license = 'GPL3',
 }
 
-dependencies = { 'lua >= 5.1', 'mega.argparse', 'vim', 'lua-git2-tmp' }
+dependencies = { 'lua >= 5.1', 'mega.argparse', 'vim', 'luabitop', 'lua-git2-temp' }
 
 test_dependencies = {}
 

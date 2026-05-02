@@ -19,7 +19,11 @@ function M.exe(args)
         end
         git_dir = fs.root(git_dir, '.git')
         if args.is_bare_repository then
-            local repo = git2.Repository.open(git_dir)
+            local repo, err = git2.Repository.open(git_dir)
+            if repo == nil then
+                print(('%s: %s'):format(git_dir, err))
+                return
+            end
             print(repo:is_bare())
         else
             print(git_dir)
@@ -34,6 +38,33 @@ function M.exe(args)
     local repo, err = git2.Repository.open(git_dir)
     if repo == nil then
         print(('%s: %s'):format(git_dir, err))
+        return
+    end
+    if args.status or args["ls-files"] then
+        local S = require 'git2.status'
+        local opts = git2.StatusOptions.init()
+        if args["ls-files"] then
+            opts:set_show(opts.SHOW_WORKDIR_ONLY)
+            args.ignored = not args.exclude_standard and not args.modified
+            args.untracked_files = args.others and "all" or "no"
+            if not args.modified and not args.others then
+                opts:set_flags(opts:flags() + opts.INCLUDE_UNMODIFIED)
+            end
+        end
+        if args.untracked_files == "all" then
+            opts:set_flags(opts:flags() + opts.INCLUDE_UNTRACKED)
+        end
+        if args.ignored then
+            opts:set_flags(opts:flags() + opts.INCLUDE_IGNORED)
+        end
+        local committed_changes, unstaged_changes = S.get_status(repo, opts)
+        local lines
+        if args.status then
+            lines = S.format_all_changes(committed_changes, unstaged_changes)
+        else
+            lines = S.ls_files(unstaged_changes, args.others and S.statuses.WT_NEW + S.statuses.IGNORED or 0)
+        end
+        print(table.concat(lines, "\n"))
         return
     end
     local idx = repo:index()
