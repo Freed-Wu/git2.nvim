@@ -135,6 +135,17 @@ The path shown, when relative, is relative to the current working directory."
                 help = 'skip files in standard Git exclusion lists'
             },
         },
+        {
+            [0] = {
+                name = "reset",
+                help = "Reset current HEAD to the specified state"
+            },
+            {
+                name = "file",
+                nargs = '*',
+                help = "file to be reset"
+            }
+        },
     }
 end
 

@@ -1,3 +1,4 @@
+---git status
 local bit = require "bit"
 local git2 = require "git2"
 

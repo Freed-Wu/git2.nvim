@@ -73,17 +73,22 @@ function M.exe(args)
         if args.A then
             args.file = { git_dir }
         end
-        for _, file in ipairs(args.file) do
-            if file:sub(1, 1) ~= "/" then
-                file = fs.joinpath(fn.getcwd(), file)
+        local arr = git2.StrArray(#args.file)
+        for i, file in ipairs(args.file) do
+            file = fs.relpath(git_dir, file)
+            -- c index from 0
+            if file then
+                arr:set_str(i - 1, file)
             end
-            idx:add_all(git2.StrArray(file), 0)
         end
-    elseif args.rm then
+        idx:add_all(arr, 0)
+    elseif args.rm or args.reset then
         for _, file in ipairs(args.file) do
             file = expand(file)
             idx:remove(file, 0)
-            if not args.cached then
+            if args.reset then
+                require 'git2.reset'.reset(repo, idx, file)
+            elseif not args.cached then
                 os.remove(file)
             end
         end
