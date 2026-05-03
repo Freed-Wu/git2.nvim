@@ -4,7 +4,6 @@ local fs = require "vim.fs"
 local fn = require "vim.fn"
 ---@diagnostic disable: undefined-global
 -- luacheck: ignore 111 113 212
-local expand = vim and fn.expand or function(dir) return dir end
 local Parser = require "mega.argparse".Parser
 
 local M = {}
@@ -12,12 +11,9 @@ local M = {}
 ---core function
 ---@param args table
 function M.exe(args)
+    local git_dir = fn.expand(args.C)
+    git_dir = fs.root(git_dir, '.git')
     if args['rev-parse'] then
-        local git_dir = fn.getcwd()
-        if args.git_dir then
-            git_dir = '.'
-        end
-        git_dir = fs.root(git_dir, '.git')
         if args.is_bare_repository then
             local repo, err = git2.Repository.open(git_dir)
             if repo == nil then
@@ -25,8 +21,15 @@ function M.exe(args)
                 return
             end
             print(repo:is_bare())
-        else
+        elseif args.show_toplevel then
             print(git_dir)
+        else
+            local dir = fs.joinpath(git_dir, '.git')
+            if args.git_dir then
+                print(fs.relpath(fn.getcwd(), dir))
+            elseif args.absolute_git_dir then
+                print(dir)
+            end
         end
         return
     end
@@ -34,7 +37,6 @@ function M.exe(args)
         git2.Repository.init(args.directory, 0)
         return
     end
-    local git_dir = expand(args.C)
     local repo, err = git2.Repository.open(git_dir)
     if repo == nil then
         print(('%s: %s'):format(git_dir, err))
@@ -73,21 +75,16 @@ function M.exe(args)
         if args.A then
             args.file = { git_dir }
         end
-        local arr = git2.StrArray(#args.file)
-        for i, file in ipairs(args.file) do
-            file = fs.relpath(git_dir, file)
-            -- c index from 0
-            if file then
-                arr:set_str(i - 1, file)
-            end
-        end
+        local arr = require 'git2.reset'.get_str_array(git_dir, args.file)
         idx:add_all(arr, 0)
     elseif args.rm or args.reset then
         for _, file in ipairs(args.file) do
-            file = expand(file)
+            file = fn.expand(file)
             idx:remove(file, 0)
             if args.reset then
-                require 'git2.reset'.reset(repo, idx, file)
+                file = fs.relpath(git_dir, file)
+                local entry = require 'git2.reset'.get_index_entry(repo, file)
+                idx:add(entry)
             elseif not args.cached then
                 os.remove(file)
             end
@@ -96,13 +93,20 @@ function M.exe(args)
     idx:write()
 end
 
+---get parser
+---@return table
+function M.get_parser()
+    local parser = Parser {
+        data = require "git2.data",
+        callback = M.exe
+    }
+    return parser
+end
+
 ---**entry for git2**
 ---@param argv string[]
 function M.main(argv)
-    local parser = Parser {
-        get_data = require "git2.data".get,
-        callback = M.exe
-    }
+    local parser = M.get_parser()
     parser:parse(argv)
 end
 

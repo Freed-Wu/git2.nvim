@@ -197,6 +197,19 @@ endif
 
 ```
 
+### [fern.vim](https://github.com/lambdalisue/fern.vim)
+
+#### Replace [fern-mapping-git.vim](https://github.com/lambdalisue/fern-mapping-git.vim)
+
+```vim
+if has('nvim')
+    nnoremap <buffer><nowait> << :<C-U>call fern#scheme#file#mapping#git#stage()<CR>
+    nnoremap <buffer><nowait> >> :<C-U>call fern#scheme#file#mapping#git#unstage()<CR>
+endif
+```
+
+#### Replace [fern-git-status](https://github.com/lambdalisue/fern-git-status.vim)
+
 ## TODO
 
 - full CLI APIs. wait [upstream](https://github.com/libgit2/luagit2/issues/10)

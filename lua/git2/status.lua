@@ -1,6 +1,8 @@
 ---git status
 local bit = require "bit"
 local git2 = require "git2"
+local fs = require "vim.fs"
+local fn = require "vim.fn"
 
 local M = {
     statuses = {
@@ -116,8 +118,6 @@ end
 ---@param others boolean
 ---@return string[]
 function M.ls(modified, others)
-    local fs = require "vim.fs"
-    local fn = require "vim.fn"
     local git_dir = fs.root(fn.getcwd(), '.git')
     local repo = git2.Repository.open(git_dir)
     if repo == nil then

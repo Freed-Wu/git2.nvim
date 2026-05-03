@@ -39,7 +39,7 @@ end
 
 build = {
   type = 'builtin',
-  copy_directories = { 'scripts', 'plugin' },
+  copy_directories = { 'scripts', 'plugin', 'autoload' },
   install = {
     bin = {
       git2 = 'bin/git2',
