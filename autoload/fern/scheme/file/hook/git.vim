@@ -1,14 +1,27 @@
 let s:CancellationToken = vital#fern#import('Async.CancellationToken')
 let s:PROCESSING_VARNAME = 'fern_git_status_processing'
 
-function! fern#scheme#file#hook#git#init() abort
+function! fern#scheme#file#hook#git#init(...) abort
+  let include_directories = v:true
+  let include_ignored = v:true
+  let include_untracked = v:true
+  if a:0 > 0
+    let include_directories = a:000[0]
+    if a:0 > 1
+      let include_ignored = a:000[1]
+      if a:0 > 2
+        let include_untracked = a:000[2]
+      endif
+    endif
+  endif
+  let opts = [include_directories, include_ignored, include_untracked]
   if exists('s:ready')
     return
   endif
   let s:ready = 1
   call fern#hook#add('viewer:highlight', function('s:on_highlight'))
   call fern#hook#add('viewer:syntax', function('s:on_syntax'))
-  call fern#hook#add('viewer:redraw', function('s:on_redraw'))
+  call fern#hook#add('viewer:redraw', function('s:on_redraw', opts))
 endfunction
 
 function! s:on_highlight(...) abort
@@ -32,13 +45,13 @@ function! s:on_syntax(...) abort
   syntax match FernGitStatusIgnored   /!!/ contained containedin=FernGitStatus
 endfunction
 
-function! s:on_redraw(helper) abort
+function! s:on_redraw(include_directories, include_ignored, include_untracked, helper) abort
   let bufnr = a:helper.bufnr
   let processing = getbufvar(bufnr, s:PROCESSING_VARNAME, 0)
   if a:helper.fern.scheme !=# 'file' || processing
     return
   endif
-  let status_map = v:lua.require('git2.status').get_status_map(v:true, v:true, v:true)
+  let status_map = v:lua.require('git2.status').get_status_map(a:include_directories, a:include_ignored, a:include_untracked)
   for node in a:helper.fern.visible_nodes
     call s:update_node(status_map, node)
   endfor

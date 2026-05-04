@@ -216,6 +216,27 @@ if has('nvim')
 endif
 ```
 
+```text
+ git2.nvim/
+  autoload/ [ -]
+   fern/ [ -]
+    scheme/ [ -]
+     file/ [ -]
+      hook/ [ -]
+       git.vim [ M]
+      mapping/
+  bin/
+  lua/
+  packages/
+  plugin/
+  scripts/
+  spec/
+  git2.nvim-scm-1.rockspec
+  LICENSE
+ 󰂺 README.md [ M]
+  shell.nix
+```
+
 ## TODO
 
 - full CLI APIs. wait [upstream](https://github.com/libgit2/luagit2/issues/10)
