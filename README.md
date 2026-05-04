@@ -104,7 +104,6 @@ apt-get -y install libgit2
 # Nix
 # use nix-shell to create a virtual environment then build
 # homebrew
-brew tap tonyfettes/homebrew-git2
 brew install libgit2 pkg-config
 # Windows msys2
 pacboy -S --noconfirm pkg-config libgit2 gcc
