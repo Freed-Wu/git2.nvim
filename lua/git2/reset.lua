@@ -33,7 +33,7 @@ function M.get_str_array(git_dir, files)
     return arr
 end
 
----for fern
+---for fern.vim
 ---@param root string
 ---@param files string[]
 function M.unstage(root, files)
@@ -51,7 +51,7 @@ function M.unstage(root, files)
     idx:write()
 end
 
----for fern
+---for fern.vim
 ---@param root string
 ---@param files string[]
 function M.stage(root, files)

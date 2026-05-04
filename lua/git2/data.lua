@@ -125,6 +125,11 @@ The path shown, when relative, is relative to the current working directory."
             default = "all",
             help = 'show untracked files'
         },
+        {
+            name = "--porcelain",
+            action = "store_true",
+            help = 'produce machine-readable output'
+        },
     },
     {
         [0] = {

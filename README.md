@@ -203,12 +203,18 @@ endif
 
 ```vim
 if has('nvim')
-    nnoremap <buffer><nowait> << :<C-U>call fern#scheme#file#mapping#git#stage()<CR>
-    nnoremap <buffer><nowait> >> :<C-U>call fern#scheme#file#mapping#git#unstage()<CR>
+  nnoremap <buffer><nowait> << :<C-U>call fern#scheme#file#mapping#git#stage()<CR>
+  nnoremap <buffer><nowait> >> :<C-U>call fern#scheme#file#mapping#git#unstage()<CR>
 endif
 ```
 
 #### Replace [fern-git-status](https://github.com/lambdalisue/fern-git-status.vim)
+
+```vim
+if has('nvim')
+  call fern#scheme#file#hook#git#init()
+endif
+```
 
 ## TODO
 

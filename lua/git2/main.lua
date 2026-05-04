@@ -59,10 +59,14 @@ function M.exe(args)
         if args.ignored then
             opts:set_flags(opts:flags() + opts.INCLUDE_IGNORED)
         end
-        local committed_changes, unstaged_changes = S.get_status(repo, opts)
+        local committed_changes, unstaged_changes = S.get_status(repo, opts, args.porcelain)
         local lines
         if args.status then
-            lines = S.format_all_changes(committed_changes, unstaged_changes)
+            if args.porcelain then
+                lines = S.format_change(committed_changes)
+            else
+                lines = S.format_all_changes(committed_changes, unstaged_changes)
+            end
         else
             lines = S.ls_files(unstaged_changes, args.others and S.statuses.WT_NEW + S.statuses.IGNORED or 0)
         end
