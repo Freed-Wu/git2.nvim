@@ -178,8 +178,8 @@ end
 ---@param others boolean?
 ---@return string[]
 function M.ls(modified, others)
-    local git_dir = fs.root('.', '.git')
-    local repo = git2.Repository.open(git_dir)
+    local repo_dir = fs.root('.', '.git')
+    local repo = git2.Repository.open(repo_dir)
     if repo == nil then
         return {}
     end
@@ -201,8 +201,8 @@ end
 ---@param include_untracked boolean?
 ---@return table<string, string>
 function M.get_status_map(include_directories, include_ignored, include_untracked)
-    local git_dir = fs.root('.', '.git')
-    local repo = git2.Repository.open(git_dir)
+    local repo_dir = fs.root('.', '.git')
+    local repo = git2.Repository.open(repo_dir)
     if repo == nil then
         return {}
     end
