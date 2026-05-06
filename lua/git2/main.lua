@@ -11,25 +11,28 @@ local M = {}
 ---core function
 ---@param args table
 function M.exe(args)
-    local git_dir = fn.expand(args.C)
-    git_dir = fs.root(git_dir, '.git')
+    local repo_dir = fn.expand(args.C)
+    repo_dir = fs.root(repo_dir, '.git')
     if args['rev-parse'] then
         if args.is_bare_repository then
-            local repo, err = git2.Repository.open(git_dir)
+            local repo, err = git2.Repository.open(repo_dir)
             if repo == nil then
-                print(('%s: %s'):format(git_dir, err))
+                print(('%s: %s'):format(repo_dir, err))
                 return
             end
             print(repo:is_bare())
         elseif args.show_toplevel then
-            print(git_dir)
-        else
-            local dir = fs.joinpath(git_dir, '.git')
-            if args.git_dir then
-                print(fs.relpath(fn.getcwd(), dir))
-            elseif args.absolute_git_dir then
-                print(dir)
+            print(repo_dir)
+        elseif args.git_dir or args.absolute_git_dir then
+            local git_dir = fs.joinpath(repo_dir, '.git')
+            if fn.isdirectory(git_dir) == 1 then
+                if args.git_dir then
+                    git_dir = fs.relpath(fn.getcwd(), git_dir)
+                end
+            else
+                gitdir = require 'yaml'.loadpath(git_dir).gitdir
             end
+            print(git_dir)
         end
         return
     end
@@ -37,9 +40,9 @@ function M.exe(args)
         git2.Repository.init(args.directory, 0)
         return
     end
-    local repo, err = git2.Repository.open(git_dir)
+    local repo, err = git2.Repository.open(repo_dir)
     if repo == nil then
-        print(('%s: %s'):format(git_dir, err))
+        print(('%s: %s'):format(repo_dir, err))
         return
     end
     if args.status or args["ls-files"] then
@@ -77,16 +80,16 @@ function M.exe(args)
 
     if args.add then
         if args.A then
-            args.file = { git_dir }
+            args.file = { repo_dir }
         end
-        local arr = require 'git2.reset'.get_str_array(git_dir, args.file)
+        local arr = require 'git2.reset'.get_str_array(repo_dir, args.file)
         idx:add_all(arr, 0)
     elseif args.rm or args.reset then
         for _, file in ipairs(args.file) do
             file = fn.expand(file)
             idx:remove(file, 0)
             if args.reset then
-                file = fs.relpath(git_dir, file)
+                file = fs.relpath(repo_dir, file)
                 local entry = require 'git2.reset'.get_index_entry(repo, file)
                 idx:add(entry)
             elseif not args.cached then
