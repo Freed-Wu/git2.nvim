@@ -95,11 +95,10 @@ end
 ---@param status integer
 ---@return string
 function M.format_porcelain_status(status)
-    local tag = M.tag.double[status]
-    if tag then
+    local tag = M.tag.double[status] or '  '
+    if tag == '??' or tag == '!!' then
         return tag
     end
-    tag = '  '
     for _, v in pairs(M.statuses) do
         if bit.band(v, status) == v then
             if M.tag.index[v] then

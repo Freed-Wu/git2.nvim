@@ -1,24 +1,9 @@
-let s:CancellationToken = vital#fern#import('Async.CancellationToken')
-let s:PROCESSING_VARNAME = 'fern_git_status_processing'
-
 function! fern#scheme#file#hook#git#init(...) abort
-  let include_directories = v:true
-  let include_ignored = v:true
-  let include_untracked = v:true
-  if a:0 > 0
-    let include_directories = a:000[0]
-    if a:0 > 1
-      let include_ignored = a:000[1]
-      if a:0 > 2
-        let include_untracked = a:000[2]
-      endif
-    endif
-  endif
-  let opts = [include_directories, include_ignored, include_untracked]
   if exists('s:ready')
     return
   endif
   let s:ready = 1
+  let opts = [get(a:000, 0, v:true), get(a:000, 1, v:true), get(a:000, 2, v:true), get(a:000, 3, 'fern_git_status_processing')]
   call fern#hook#add('viewer:highlight', function('s:on_highlight'))
   call fern#hook#add('viewer:syntax', function('s:on_syntax'))
   call fern#hook#add('viewer:redraw', function('s:on_redraw', opts))
@@ -45,9 +30,9 @@ function! s:on_syntax(...) abort
   syntax match FernGitStatusIgnored   /!!/ contained containedin=FernGitStatus
 endfunction
 
-function! s:on_redraw(include_directories, include_ignored, include_untracked, helper) abort
+function! s:on_redraw(include_directories, include_ignored, include_untracked, varname, helper) abort
   let bufnr = a:helper.bufnr
-  let processing = getbufvar(bufnr, s:PROCESSING_VARNAME, 0)
+  let processing = getbufvar(bufnr, a:varname, 0)
   if a:helper.fern.scheme !=# 'file' || processing
     return
   endif
@@ -55,7 +40,7 @@ function! s:on_redraw(include_directories, include_ignored, include_untracked, h
   for node in a:helper.fern.visible_nodes
     call s:update_node(status_map, node)
   endfor
-  call s:redraw(a:helper)
+  call s:redraw(a:helper, a:varname)
 endfunction
 
 function! s:update_node(status_map, node) abort
@@ -65,9 +50,9 @@ function! s:update_node(status_map, node) abort
   return a:node
 endfunction
 
-function! s:redraw(helper) abort
+function! s:redraw(helper, varname) abort
   let bufnr = a:helper.bufnr
-  call setbufvar(bufnr, s:PROCESSING_VARNAME, 1)
+  call setbufvar(bufnr, a:varname, 1)
   return a:helper.async.redraw()
-        \.then({ -> setbufvar(bufnr, s:PROCESSING_VARNAME, 0)})
+        \.then({ -> setbufvar(bufnr, a:varname, 0)})
 endfunction
