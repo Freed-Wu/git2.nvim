@@ -12,7 +12,7 @@ local M = {}
 ---@param args table
 function M.exe(args)
     local repo_dir = fn.expand(args.C)
-    repo_dir = fs.root(repo_dir, '.git')
+    repo_dir = fs.root(repo_dir, '.git') or ''
     if args['rev-parse'] then
         if args.is_bare_repository then
             local repo, err = git2.Repository.open(repo_dir)

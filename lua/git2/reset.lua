@@ -37,7 +37,7 @@ end
 ---@param root string
 ---@param files string[]
 function M.unstage(root, files)
-    local repo_dir = fs.root(root, '.git')
+    local repo_dir = fs.root(root, '.git') or ''
     local repo = git2.Repository.open(repo_dir)
     if repo == nil then
         return
@@ -55,7 +55,7 @@ end
 ---@param root string
 ---@param files string[]
 function M.stage(root, files)
-    local repo_dir = fs.root(root, '.git')
+    local repo_dir = fs.root(root, '.git') or ''
     local repo = git2.Repository.open(repo_dir)
     if repo == nil then
         return

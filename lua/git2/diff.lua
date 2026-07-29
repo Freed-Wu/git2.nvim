@@ -13,7 +13,7 @@ local M = {}
 function M.get_raw_hunks(root, file)
     file = file or fn.expand('%:p')
     root = root or fs.dirname(file)
-    local repo_dir = fs.root(root, '.git')
+    local repo_dir = fs.root(root, '.git') or ''
     file = fs.relpath(repo_dir, file)
     local repo = git2.Repository.open(repo_dir)
     if repo == nil then
