@@ -96,4 +96,66 @@ function M.get_raw_hunks(root, file, new_text, old_text)
     return { 0, 0, 0 }
 end
 
+---Build a `StrArray` pathspec from a string or list of strings.
+---@param pathspec string | string[]?
+---@return userdata? StrArray (nil when no pathspec)
+local function to_str_array(pathspec)
+    if type(pathspec) == 'string' then
+        pathspec = { pathspec }
+    end
+    if type(pathspec) ~= 'table' or #pathspec == 0 then
+        return nil
+    end
+    local arr = git2.StrArray(#pathspec)
+    for i, p in ipairs(pathspec) do
+        arr:set_str(i - 1, p)
+    end
+    return arr
+end
+
+---git diff -u
+---Mirrors `git diff -u`:
+---  * no `o.commit`, no `o.cached` -> unstaged changes (`index_to_workdir`)
+---  * `o.cached` -> staged changes vs HEAD (`tree_to_index`)
+---  * `o.commit` given -> changes vs that commit (`tree_to_workdir_with_index`)
+---@param repo userdata
+---@param o { cached?: boolean, commit?: string, pathspec?: string | string[] }?
+---@return string unified diff text (empty string when nothing to show)
+function M.diff(repo, o)
+    o = o or {}
+    local opts = git2.DiffOptions.init()
+    opts:set_id_abbrev(7)
+    local arr = to_str_array(o.pathspec)
+    if arr then
+        opts:set_pathspec(arr)
+    end
+
+    local diff
+    if o.cached then
+        local commit = git2.Object.revparse_single(repo, o.commit or 'HEAD')
+        if commit == nil then
+            return ''
+        end
+        local tree = commit:tree()
+        if tree == nil then
+            return ''
+        end
+        diff = git2.Diff.tree_to_index(repo, tree, repo:index(), opts)
+    elseif o.commit then
+        local commit = git2.Object.revparse_single(repo, o.commit)
+        if commit == nil then
+            return ''
+        end
+        local tree = commit:tree()
+        if tree == nil then
+            return ''
+        end
+        diff = git2.Diff.tree_to_workdir_with_index(repo, tree, opts)
+    else
+        diff = git2.Diff.index_to_workdir(repo, repo:index(), opts)
+    end
+
+    return diff and diff:to_buf(diff.FORMAT_PATCH) or ''
+end
+
 return M

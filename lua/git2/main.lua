@@ -78,6 +78,19 @@ function M.exe(args)
     end
     local idx = repo:index()
 
+    if args.diff then
+        local D = require 'git2.diff'
+        local text = D.diff(repo, {
+            cached = args.cached,
+            commit = args.commit,
+            pathspec = args.pathspec,
+        })
+        if #text > 0 then
+            print(text:gsub('\n$', ''))
+        end
+        return
+    end
+
     if args.add then
         if args.A then
             args.file = { repo_dir }

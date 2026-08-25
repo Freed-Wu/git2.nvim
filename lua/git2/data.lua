@@ -152,4 +152,25 @@ The path shown, when relative, is relative to the current working directory."
             help = 'skip files in standard Git exclusion lists'
         },
     },
+    {
+        [0] = {
+            name = "diff",
+            help = "Show changes between commits, commit and working tree, etc"
+        },
+        {
+            name = { "--cached", "--staged" },
+            action = "store_true",
+            help = 'show staged changes'
+        },
+        {
+            name = "commit",
+            nargs = '?',
+            help = "commit to compare against (defaults to HEAD)"
+        },
+        {
+            name = "pathspec",
+            nargs = '*',
+            help = "limit the diff to the given paths"
+        },
+    },
 }
