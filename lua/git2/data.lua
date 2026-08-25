@@ -173,4 +173,35 @@ The path shown, when relative, is relative to the current working directory."
             help = "limit the diff to the given paths"
         },
     },
+    {
+        [0] = {
+            name = "blame",
+            help = "Show what revision and author last modified each line of a file"
+        },
+        {
+            name = "--line-range",
+            default = "",
+            help = 'limit the blame to the given line range (e.g. "1,10" or "5,+3")'
+        },
+        {
+            name = "--first-parent",
+            action = "store_true",
+            help = "Follow only the first parent commit upon seeing a merge"
+        },
+        {
+            name = "--mailmap",
+            action = "store_true",
+            help = "use mailmap to canonicalize author names/emails"
+        },
+        {
+            name = "--ignore-whitespace",
+            action = "store_true",
+            help = "ignore whitespace when comparing lines"
+        },
+        {
+            name = "file",
+            nargs = '?',
+            help = "file to blame (defaults to the current buffer's file)"
+        },
+    },
 }

@@ -86,7 +86,22 @@ function M.exe(args)
             pathspec = args.pathspec,
         })
         if #text > 0 then
-            print(text:gsub('\n$', ''))
+            print((text:gsub('\n$', '')))
+        end
+        return
+    end
+
+    if args.blame then
+        local B = require 'git2.blame'
+        local text = B.blame(repo, {
+            file = args.file,
+            line_range = args.line_range,
+            first_parent = args.first_parent,
+            mailmap = args.mailmap,
+            ignore_whitespace = args.ignore_whitespace,
+        })
+        if #text > 0 then
+            print((text:gsub('\n$', '')))
         end
         return
     end
