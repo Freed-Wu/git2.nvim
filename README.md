@@ -154,6 +154,8 @@ require("lazy").setup {
 
 ## Usage
 
+### Git
+
 ```vim
 :edit subdir/test.txt
 :Git init
@@ -162,7 +164,27 @@ require("lazy").setup {
 :Git rm --cached %
 ```
 
+### commit
+
+```bash
+git commit
+```
+
+will `:vsplit` a diff window like
+[committia](https://github.com/rhysd/committia.vim).
+
+```vim
+inoremap <buffer> <M-N> <C-O>:lua require('git2.nvim.committia').scroll_window('<C-V><C-F>')<CR>
+inoremap <buffer> <M-P> <C-O>:lua require('git2.nvim.committia').scroll_window('<C-V><C-B>')<CR>
+```
+
 ## Integrations
+
+### [vim-airline](https://github.com/vim-airline/vim-airline)
+
+```vim
+let g:airline#extensions#hunks#enabled = 1
+```
 
 ### [vim-startify](https://github.com/mhinz/vim-startify)
 
