@@ -53,9 +53,7 @@ end
 ---  the text is taken from the Neovim buffer.
 ---@param index_to_workdir boolean? when true, diff the index against the
 ---  working tree (classic style); otherwise use coc style (default).
----@return integer added
----@return integer modified
----@return integer deleted
+---@return integer[] hunks added modified deleted
 function M.get_raw_hunks(root, file, content, index_to_workdir)
     file = file or fn.expand('%:p')
     root = root or fs.dirname(file)
@@ -63,7 +61,7 @@ function M.get_raw_hunks(root, file, content, index_to_workdir)
     file = fs.relpath(repo_dir, file)
     local repo = git2.Repository.open(repo_dir)
     if repo == nil then
-        return 0, 0, 0
+        return { 0, 0, 0 }
     end
 
     local opts = git2.DiffOptions.init()
@@ -79,7 +77,7 @@ function M.get_raw_hunks(root, file, content, index_to_workdir)
                 ins, mod, del = ins + i, mod + m, del + d
             end
         end
-        return ins, mod, del
+        return { ins, mod, del }
     end
 
     -- coc style: diff the git-recorded version against `content`
@@ -87,7 +85,7 @@ function M.get_raw_hunks(root, file, content, index_to_workdir)
         content = M.read_buffer(file)
     end
     if content == nil then
-        return 0, 0, 0
+        return { 0, 0, 0 }
     end
 
     local old = ''
@@ -101,9 +99,9 @@ function M.get_raw_hunks(root, file, content, index_to_workdir)
 
     local patch = git2.Patch.from_buffers(old, #old, file, content, #content, file, opts)
     if patch then
-        return M.count_patch(patch)
+        return { M.count_patch(patch) }
     end
-    return 0, 0, 0
+    return { 0, 0, 0 }
 end
 
 return M
