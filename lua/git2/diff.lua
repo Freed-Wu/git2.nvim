@@ -34,13 +34,18 @@ end
 ---@param file string absolute path
 ---@return string? content (nil if the file has no buffer loaded)
 function M.read_buffer(file)
+    ---@diagnostic disable: undefined-global
+    -- luacheck: ignore 111 113
+    if vim == nil then
+        return fn.readfile(file)
+    end
     local bufnr = fn.bufnr(file, true)
     if bufnr == -1 then
-        return nil
+        return fn.readfile(file)
     end
     local lines = fn.getbufline(bufnr, 1, '$')
     if #lines == 0 then
-        return ''
+        return fn.readfile(file)
     end
     return table.concat(lines, '\n') .. '\n'
 end
@@ -48,13 +53,10 @@ end
 ---for `airline#extensions#hunks#get_raw_hunks()`
 ---@param root string?
 ---@param file string?
----@param content string? when set (coc style), diff this text against the
----  git-recorded version of the file; when nil and not `index_to_workdir`,
----  the text is taken from the Neovim buffer.
----@param index_to_workdir boolean? when true, diff the index against the
----  working tree (classic style); otherwise use coc style (default).
+---@param new_text string?
+---@param old_text string | integer?
 ---@return integer[] hunks added modified deleted
-function M.get_raw_hunks(root, file, content, index_to_workdir)
+function M.get_raw_hunks(root, file, new_text, old_text)
     file = file or fn.expand('%:p')
     root = root or fs.dirname(file)
     local repo_dir = fs.root(root, '.git') or ''
@@ -66,38 +68,28 @@ function M.get_raw_hunks(root, file, content, index_to_workdir)
 
     local opts = git2.DiffOptions.init()
 
-    if index_to_workdir then
-        local idx = repo:index()
-        local diff = git2.Diff.index_to_workdir(repo, idx, opts)
-        local ins, mod, del = 0, 0, 0
-        for j = 0, diff:num() - 1 do
-            local patch = git2.Patch.from_diff(diff, j)
-            if patch then
-                local i, m, d = M.count_patch(patch)
-                ins, mod, del = ins + i, mod + m, del + d
+    if new_text == nil then
+        new_text = M.read_buffer(file)
+    end
+
+    if type(old_text) ~= type('') then
+        local blob
+        if type(old_text) == type(0) then
+            local idx = repo:index()
+            local entry = idx:get_bypath(file, old_text)
+            if entry then
+                blob = git2.Blob.lookup(repo, entry:id())
             end
+        elseif old_text == nil then
+            blob = git2.Object.revparse_single(repo, 'HEAD:' .. file)
         end
-        return { ins, mod, del }
-    end
-
-    -- coc style: diff the git-recorded version against `content`
-    if content == nil then
-        content = M.read_buffer(file)
-    end
-    if content == nil then
-        return { 0, 0, 0 }
-    end
-
-    local old = ''
-    local ok, oid = pcall(git2.Blob.from_workdir, repo, file)
-    if ok and oid then
-        local blob = git2.Blob.lookup(repo, oid)
-        if blob then
-            old = blob:rawcontent() or ''
+        if blob == nil then
+            return { 0, 0, 0 }
         end
+        old_text = blob:rawcontent()
     end
 
-    local patch = git2.Patch.from_buffers(old, #old, file, content, #content, file, opts)
+    local patch = git2.Patch.from_buffers(old_text, #old_text, file, new_text, #new_text, file, opts)
     if patch then
         return { M.count_patch(patch) }
     end
