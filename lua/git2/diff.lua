@@ -58,12 +58,15 @@ end
 ---@return integer[] hunks added modified deleted
 function M.get_raw_hunks(root, file, new_text, old_text)
     file = file or fn.expand('%:p')
+    if file == '' then
+        return {}
+    end
     root = root or fs.dirname(file)
     local repo_dir = fs.root(root, '.git') or ''
     file = fs.relpath(repo_dir, file)
     local repo = git2.Repository.open(repo_dir)
     if repo == nil then
-        return { 0, 0, 0 }
+        return {}
     end
 
     local opts = git2.DiffOptions.init()
@@ -84,7 +87,7 @@ function M.get_raw_hunks(root, file, new_text, old_text)
             blob = git2.Object.revparse_single(repo, 'HEAD:' .. file)
         end
         if blob == nil then
-            return { 0, 0, 0 }
+            return {}
         end
         old_text = blob:rawcontent()
     end
@@ -93,7 +96,7 @@ function M.get_raw_hunks(root, file, new_text, old_text)
     if patch then
         return { M.count_patch(patch) }
     end
-    return { 0, 0, 0 }
+    return {}
 end
 
 ---Build a `StrArray` pathspec from a string or list of strings.
