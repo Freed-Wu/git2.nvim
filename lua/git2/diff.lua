@@ -32,8 +32,8 @@ end
 
 ---Read the current text of `file` from the Neovim buffer it is loaded in.
 ---@param file string absolute path
----@return string? content (nil if the file has no buffer loaded)
-function M.read_buffer(file)
+---@return string[] lines
+function M.read_file(file)
     ---@diagnostic disable: undefined-global
     -- luacheck: ignore 111 113
     if vim == nil then
@@ -43,11 +43,7 @@ function M.read_buffer(file)
     if bufnr == -1 then
         return fn.readfile(file)
     end
-    local lines = fn.getbufline(bufnr, 1, '$')
-    if #lines == 0 then
-        return fn.readfile(file)
-    end
-    return table.concat(lines, '\n') .. '\n'
+    return fn.getbufline(bufnr, 1, '$')
 end
 
 ---for `airline#extensions#hunks#get_raw_hunks()`
@@ -72,7 +68,8 @@ function M.get_raw_hunks(root, file, new_text, old_text)
     local opts = git2.DiffOptions.init()
 
     if new_text == nil then
-        new_text = M.read_buffer(file)
+        local lines = M.read_file(file)
+        new_text = table.concat(lines, '\n') .. '\n'
     end
 
     if type(old_text) ~= type('') then
