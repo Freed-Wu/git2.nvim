@@ -164,6 +164,15 @@ require("lazy").setup {
 :Git rm --cached %
 ```
 
+### Git blame
+
+```vim
+:Git blame
+```
+
+Use virtual text to display blame info like
+[`:Fugit2Blame`](https://github.com/SuperBo/fugit2.nvim).
+
 ### commit
 
 ```bash

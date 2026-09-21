@@ -3,31 +3,11 @@ local git2 = require "git2"
 local fs = require "vim.fs"
 local fn = require "vim.fn"
 ---@diagnostic disable: undefined-global
--- luacheck: ignore 111 113 212
+-- luacheck: ignore 113
 local Parser = require "mega.argparse".Parser
+local warn = require "git2.utils".warn
 
 local M = {}
-
----@param file string|string[]|nil
----@return string|nil
----@return boolean
----@return string|nil
-local function normalize_blame_file(file)
-    if type(file) == type {} then
-        if #file == 0 then
-            return nil, false
-        end
-        if #file > 1 then
-            return nil, false, "git blame expects at most one file"
-        end
-        file = file[1]
-    end
-    if file == nil or file == '' then
-        return nil, false
-    end
-    local default_current_buffer = file == '%'
-    return fn.expand(file), default_current_buffer
-end
 
 ---core function
 ---@param args table
@@ -38,7 +18,7 @@ function M.exe(args)
         if args.is_bare_repository then
             local repo, err = git2.Repository.open(repo_dir)
             if repo == nil then
-                print(('%s: %s'):format(repo_dir, err))
+                warn(('%s: %s'):format(repo_dir, err))
                 return
             end
             print(repo:is_bare())
@@ -51,7 +31,7 @@ function M.exe(args)
                     git_dir = fs.relpath(fn.getcwd(), git_dir)
                 end
             else
-                gitdir = require 'yaml'.loadpath(git_dir).gitdir
+                git_dir = require 'yaml'.loadpath(git_dir).gitdir
             end
             print(git_dir)
         end
@@ -63,7 +43,7 @@ function M.exe(args)
     end
     local repo, err = git2.Repository.open(repo_dir)
     if repo == nil then
-        print(('%s: %s'):format(repo_dir, err))
+        warn(('%s: %s'):format(repo_dir, err))
         return
     end
     if args.status or args["ls-files"] then
@@ -114,32 +94,23 @@ function M.exe(args)
 
     if args.blame then
         local B = require 'git2.blame'
-        local file, default_current_buffer, file_err = normalize_blame_file(args.file)
-        if file_err ~= nil then
-            print(file_err)
-            return
-        end
-        if default_current_buffer and vim ~= nil and vim.api and vim.api.nvim_get_current_buf then
-            require('git2.nvim.blame').show(repo, {
-                line_range = args.line_range,
-                first_parent = args.first_parent,
-                mailmap = args.mailmap,
-                ignore_whitespace = args.ignore_whitespace,
-            })
-            return
-        end
-        local text, blame_err = B.blame(repo, {
+        local file = fn.expand(args.file)
+        local data
+        data, err = B.collect(repo, {
             file = file,
             line_range = args.line_range,
             first_parent = args.first_parent,
             mailmap = args.mailmap,
             ignore_whitespace = args.ignore_whitespace,
         })
-        if blame_err ~= nil then
-            print(blame_err)
+        if data == nil then
+            warn(err)
             return
         end
-        if text ~= nil and #text > 0 then
+        if vim and args.file == '%' then
+            require('git2.nvim.blame').toggle(data.hunks)
+        else
+            local text = B.blame(data)
             print((text:gsub('\n$', '')))
         end
         return

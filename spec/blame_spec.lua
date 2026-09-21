@@ -14,6 +14,12 @@ local git2 = require 'git2'
 
 local TMP = (os.getenv('TMPDIR') or '/tmp') .. '/git2_nvim_blame_spec'
 
+local function git_commit(dir, message)
+    os.execute('git -C ' .. dir
+        .. ' -c core.hooksPath=/dev/null -c commit.gpgsign=false commit --allow-empty --no-verify -qm '
+        .. message .. ' 2>/dev/null')
+end
+
 ---Build a repo with two commits touching `f`, then return its absolute path.
 local function repo_two_commits(dir, base, changed)
     os.execute('rm -rf ' .. dir)
@@ -25,14 +31,34 @@ local function repo_two_commits(dir, base, changed)
     assert(f)
     f:write(base)
     f:close()
-    os.execute('git -C ' .. dir .. ' add f; git -C ' .. dir
-        .. ' -c core.hooksPath=/dev/null commit --no-verify -qm base 2>/dev/null')
+    os.execute('git -C ' .. dir .. ' add f')
+    git_commit(dir, 'base')
     local f2 = io.open(dir .. '/f', 'w')
     assert(f2)
     f2:write(changed)
     f2:close()
-    os.execute('git -C ' .. dir .. ' add f; git -C ' .. dir
-        .. ' -c core.hooksPath=/dev/null commit --no-verify -qm change 2>/dev/null')
+    os.execute('git -C ' .. dir .. ' add f')
+    git_commit(dir, 'change')
+    return dir
+end
+
+---Build a repo with committed lines, then append uncommitted lines to `f`.
+local function repo_with_uncommitted_append(dir)
+    os.execute('rm -rf ' .. dir)
+    os.execute('mkdir -p ' .. dir)
+    os.execute('git -C ' .. dir .. ' init -q 2>/dev/null')
+    os.execute('git -C ' .. dir .. ' config user.email t@t')
+    os.execute('git -C ' .. dir .. ' config user.name tester')
+    local f = io.open(dir .. '/f', 'w')
+    assert(f)
+    f:write('a\nb\nc\n')
+    f:close()
+    os.execute('git -C ' .. dir .. ' add f')
+    git_commit(dir, 'base')
+    local f2 = io.open(dir .. '/f', 'a')
+    assert(f2)
+    f2:write('d\ne\n')
+    f2:close()
     return dir
 end
 
@@ -117,6 +143,80 @@ describe('git2.blame M.blame (CLI path)', function()
         assert.is_not_nil(out:match('%) c'))
     end)
 
+    it('covers uncommitted appended lines with a null commit identity', function()
+        local dir = repo_with_uncommitted_append(TMP .. '/uncommitted_append')
+        local repo = assert(git2.Repository.open(dir))
+        local blame = assert(M.collect(repo, { file = dir .. '/f' }))
+
+        assert.are.equal(5, #blame.file_lines)
+        local last = blame.hunks[#blame.hunks]
+        assert.are.equal(4, last.start_line)
+        assert.are.equal(2, last.lines_in_hunk)
+        assert.are.equal('0000000', last.abbrev)
+        assert.are.equal('', last.author)
+        assert.are.equal('', last.email)
+        assert.are.equal(os.date('!%Y-%m-%d'), last.date)
+
+        local out = assert(M.blame(repo, { file = dir .. '/f' }))
+        assert.is_not_nil(out:match('0000000 %(not%.committed%.yet %d%d%d%d%-%d%d%-%d%d 4%) d'))
+        assert.is_not_nil(out:match('0000000 %(not%.committed%.yet %d%d%d%d%-%d%d%-%d%d 5%) e'))
+    end)
+
+    it('falls back to commit metadata when a real blame hunk has no signature', function()
+        local original_blame_file = git2.Blame.file
+        local original_commit_lookup = git2.Commit.lookup
+        local dir = TMP .. '/signature_fallback'
+        os.execute('rm -rf ' .. dir)
+        os.execute('mkdir -p ' .. dir)
+        local f = assert(io.open(dir .. '/f', 'w'))
+        f:write('content\n')
+        f:close()
+
+        local oid = 'e118a36900000000000000000000000000000000'
+        git2.Blame.file = function()
+            return {
+                count = function() return 1 end,
+                get_hunk_byindex = function()
+                    return {
+                        final_start_line_number = function() return 1 end,
+                        lines_in_hunk = function() return 1 end,
+                        final_commit_id = function()
+                            return setmetatable({}, { __tostring = function() return oid end })
+                        end,
+                        final_signature = function() return nil end,
+                    }
+                end,
+            }
+        end
+        git2.Commit.lookup = function()
+            return {
+                author = function()
+                    return {
+                        name = function() return 'wuzhenyu' end,
+                        email = function() return 'wuzhenyu@ustc.edu' end,
+                        when = function() return 1790000000, 480 end,
+                    }
+                end,
+                committer = function() return nil end,
+            }
+        end
+
+        local ok, blame = pcall(M.collect, {
+            workdir = function() return dir end,
+            path = function() return dir .. '/.git/' end,
+        }, { file = dir .. '/f' })
+
+        git2.Blame.file = original_blame_file
+        git2.Commit.lookup = original_commit_lookup
+
+        assert.is_true(ok)
+        local hunk = assert(blame.hunks[1])
+        assert.are.equal('e118a36', hunk.abbrev)
+        assert.are.equal('wuzhenyu', hunk.author)
+        assert.are.equal('wuzhenyu@ustc.edu', hunk.email)
+        assert.are.equal('2026-09-21', hunk.date)
+    end)
+
     it('missing file reports an explicit error', function()
         local dir = repo_two_commits(TMP .. '/nofile', 'a\n', 'a\n')
         local repo = assert(git2.Repository.open(dir))
@@ -195,6 +295,7 @@ describe('git2.nvim.blame inline toggle', function()
                     return state.vars[key]
                 end,
                 nvim_buf_line_count = function() return 10 end,
+                nvim_buf_get_lines = function() return { 'a' } end,
                 nvim_buf_set_extmark = function()
                     state.extmarks = state.extmarks + 1
                     return state.extmarks
@@ -245,12 +346,12 @@ describe('git2.nvim.blame inline toggle', function()
     it('toggles inline blame off on repeated show', function()
         local inline = require 'git2.nvim.blame'
 
-        assert.is_true(inline.show({}, { bufnr = 3 }))
+        assert.is_true(inline.toggle({}, { bufnr = 3 }))
         assert.are.equal(1, state.collect_calls)
         assert.is_true(state.vars.git2_blame_is_loaded)
         assert.are.equal(1, state.extmarks)
 
-        assert.is_false(inline.show({}, { bufnr = 3 }))
+        assert.is_false(inline.toggle({}, { bufnr = 3 }))
         assert.are.equal(1, state.collect_calls)
         assert.is_nil(state.vars.git2_blame_is_loaded)
         assert.are.equal(0, state.extmarks)

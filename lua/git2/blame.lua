@@ -59,9 +59,9 @@ end
 
 ---@param o { first_parent?: boolean, mailmap?: boolean, ignore_whitespace?: boolean,
 ---line_range?: string }
----@param disk string
+---@param total integer
 ---@return userdata
-local function build_options(o, disk)
+local function build_options(o, total)
     o = o or {}
     local opts = git2.BlameOptions.init()
     local flags = 0
@@ -78,15 +78,7 @@ local function build_options(o, disk)
         opts:set_flags(flags)
     end
 
-    local total = 0
     if o.line_range and o.line_range ~= '' then
-        local fh = io.open(disk, 'r')
-        if fh then
-            for _ in fh:lines() do
-                total = total + 1
-            end
-            fh:close()
-        end
         local min_l, max_l = parse_line_range(o.line_range, math.max(total, 1))
         opts:set_min_line(min_l)
         opts:set_max_line(max_l)
@@ -94,24 +86,93 @@ local function build_options(o, disk)
     return opts
 end
 
----@param disk string
+---@param contents string
 ---@return string[]
-local function read_file_lines(disk)
-    local file_lines = {}
-    local fh = io.open(disk, 'r')
-    if fh then
-        for line in fh:lines() do
-            file_lines[#file_lines + 1] = line
-        end
-        fh:close()
+local function split_lines(contents)
+    local lines = {}
+    contents = contents or ''
+    if contents == '' then
+        return lines
     end
-    return file_lines
+    for line in (contents .. "\n"):gmatch("(.-)\n") do
+        if line ~= '' or #lines > 0 or contents:sub(1, 1) == "\n" then
+            lines[#lines + 1] = line
+        end
+    end
+    if contents:sub(-1) == "\n" then
+        lines[#lines] = nil
+    end
+    return lines
+end
+
+---@param disk string
+---@return string
+local function read_file_contents(disk)
+    local fh = io.open(disk, 'r')
+    if not fh then
+        return ''
+    end
+    local contents = fh:read('*a') or ''
+    fh:close()
+    return contents
+end
+
+---@param id userdata?
+---@return boolean
+local function is_null_oid(id)
+    return id ~= nil and tostring(id):match("^0+$") ~= nil
+end
+
+---@param sig userdata?
+---@return table?
+local function signature_info(sig)
+    if sig == nil then
+        return nil
+    end
+
+    return {
+        author = sig:name(),
+        email = sig:email(),
+        when = select(1, sig:when()),
+    }
+end
+
+---@param repo userdata
+---@param id userdata?
+---@return table?
+local function commit_signature_info(repo, id)
+    if id == nil then
+        return nil
+    end
+
+    local commit = git2.Commit and git2.Commit.lookup and git2.Commit.lookup(repo, id)
+    if commit == nil then
+        return nil
+    end
+
+    return signature_info(commit:author()) or signature_info(commit:committer())
+end
+
+---@param blame userdata
+---@param contents string
+---@return userdata
+---@return string? err
+local function apply_buffer_blame(blame, contents)
+    if type(blame.buffer) ~= "function" then
+        return blame
+    end
+
+    local buffer_blame, err = blame:buffer(contents)
+    if buffer_blame == nil then
+        return nil, err
+    end
+    return buffer_blame
 end
 
 ---Collect blame hunks for a single file.
 ---@param repo userdata
 ---@param o { file: string, line_range?: string, first_parent?: boolean,
----mailmap?: boolean, ignore_whitespace?: boolean }?
+---mailmap?: boolean, ignore_whitespace?: boolean, contents?: string }?
 ---@return table? blame_data
 ---@return string? err
 function M.collect(repo, o)
@@ -122,13 +183,19 @@ function M.collect(repo, o)
     end
 
     local rel, disk = resolve_paths(repo, file)
-    local opts = build_options(o, disk)
+    local contents = o.contents or read_file_contents(disk)
+    local lines = split_lines(contents)
+    local opts = build_options(o, #lines)
     local blame, err = git2.Blame.file(repo, rel, opts)
     if blame == nil then
         return nil, err
     end
 
-    local file_lines = read_file_lines(disk)
+    blame, err = apply_buffer_blame(blame, contents)
+    if blame == nil then
+        return nil, err
+    end
+
     local hunks = {}
     local hc = blame:count()
     for i = 0, hc - 1 do
@@ -139,13 +206,18 @@ function M.collect(repo, o)
         local start_l = hunk:final_start_line_number()
         local lines_in_hunk = hunk:lines_in_hunk()
         local id = hunk:final_commit_id()
-        local sig = hunk:final_signature()
-        local when = sig and (select(1, sig:when())) or 0
+        local uncommitted = is_null_oid(id)
+        local info = signature_info(hunk:final_signature())
+            or (not uncommitted and commit_signature_info(repo, id) or nil)
+        local when = info and info.when or (uncommitted and os.time() or 0)
         hunks[#hunks + 1] = {
             start_line = start_l,
             lines_in_hunk = lines_in_hunk,
-            abbrev = id and tostring(id):sub(1, 7) or "0000000",
-            author = sig and sig:name() or "unknown",
+            oid = id and tostring(id) or nil,
+            abbrev = uncommitted and "0000000" or (id and tostring(id):sub(1, 7) or "0000000"),
+            author = info and info.author or (uncommitted and "" or "unknown"),
+            email = info and info.email or (uncommitted and "" or "unknown"),
+            uncommitted = uncommitted,
             when = when,
             date = format_date(when),
         }
@@ -154,7 +226,7 @@ function M.collect(repo, o)
     return {
         disk = disk,
         rel = rel,
-        file_lines = file_lines,
+        lines = lines,
         hunks = hunks,
     }
 end
@@ -162,21 +234,13 @@ end
 ---git blame <file>
 ---Mirrors `git blame -p`-ish compact output:
 ---  <abbrev7> (<author> <YYYY-MM-DD> <line_no>) <line content>
----@param repo userdata
----@param o { file: string, line_range?: string, first_parent?: boolean,
----mailmap?: boolean, ignore_whitespace?: boolean }?
----@return string? blame text
----@return string? err
-function M.blame(repo, o)
-    local data, err = M.collect(repo, o)
-    if data == nil then
-        return nil, err
-    end
-
+---@param data table
+---@return string text
+function M.blame(data)
     local lines = {}
     for _, hunk in ipairs(data.hunks) do
         for l = hunk.start_line, hunk.start_line + hunk.lines_in_hunk - 1 do
-            local content = data.file_lines[l] or ""
+            local content = data.lines[l] or ""
             table.insert(lines, ('%s (%s %s %d) %s'):format(
                 hunk.abbrev,
                 hunk.author,

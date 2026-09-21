@@ -200,7 +200,6 @@ The path shown, when relative, is relative to the current working directory."
         },
         {
             name = "file",
-            nargs = '?',
             default = '%',
             help = "file to blame (defaults to the current buffer's file)"
         },
