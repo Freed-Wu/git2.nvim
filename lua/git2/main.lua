@@ -8,6 +8,27 @@ local Parser = require "mega.argparse".Parser
 
 local M = {}
 
+---@param file string|string[]|nil
+---@return string|nil
+---@return boolean
+---@return string|nil
+local function normalize_blame_file(file)
+    if type(file) == type {} then
+        if #file == 0 then
+            return nil, false
+        end
+        if #file > 1 then
+            return nil, false, "git blame expects at most one file"
+        end
+        file = file[1]
+    end
+    if file == nil or file == '' then
+        return nil, false
+    end
+    local default_current_buffer = file == '%'
+    return fn.expand(file), default_current_buffer
+end
+
 ---core function
 ---@param args table
 function M.exe(args)
@@ -93,14 +114,32 @@ function M.exe(args)
 
     if args.blame then
         local B = require 'git2.blame'
-        local text = B.blame(repo, {
-            file = args.file,
+        local file, default_current_buffer, file_err = normalize_blame_file(args.file)
+        if file_err ~= nil then
+            print(file_err)
+            return
+        end
+        if default_current_buffer and vim ~= nil and vim.api and vim.api.nvim_get_current_buf then
+            require('git2.nvim.blame').show(repo, {
+                line_range = args.line_range,
+                first_parent = args.first_parent,
+                mailmap = args.mailmap,
+                ignore_whitespace = args.ignore_whitespace,
+            })
+            return
+        end
+        local text, blame_err = B.blame(repo, {
+            file = file,
             line_range = args.line_range,
             first_parent = args.first_parent,
             mailmap = args.mailmap,
             ignore_whitespace = args.ignore_whitespace,
         })
-        if #text > 0 then
+        if blame_err ~= nil then
+            print(blame_err)
+            return
+        end
+        if text ~= nil and #text > 0 then
             print((text:gsub('\n$', '')))
         end
         return

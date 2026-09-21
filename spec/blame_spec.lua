@@ -1,3 +1,5 @@
+package.path = 'lua/?.lua;lua/?/init.lua;' .. package.path
+
 ---Tests for git2.blame (M.blame / libgit2 blame bindings).
 ---
 ---Run with:  busted spec/blame_spec.lua
@@ -7,6 +9,7 @@
 ---real libgit2-backed blame path.
 
 local M = require 'git2.blame'
+local data = require 'git2.data'
 local git2 = require 'git2'
 
 local TMP = (os.getenv('TMPDIR') or '/tmp') .. '/git2_nvim_blame_spec'
@@ -114,10 +117,142 @@ describe('git2.blame M.blame (CLI path)', function()
         assert.is_not_nil(out:match('%) c'))
     end)
 
-    it('nonexistent file yields empty string', function()
+    it('missing file reports an explicit error', function()
+        local dir = repo_two_commits(TMP .. '/nofile', 'a\n', 'a\n')
+        local repo = assert(git2.Repository.open(dir))
+        local out, err = M.blame(repo, {})
+        assert.is_nil(out)
+        assert.are.equal('No file to blame.', err)
+    end)
+
+    it('nonexistent file returns the libgit2 error', function()
         local dir = repo_two_commits(TMP .. '/missing', 'a\n', 'a\n')
         local repo = assert(git2.Repository.open(dir))
-        local out = M.blame(repo, { file = dir .. '/does_not_exist.txt' })
-        assert.are.equal('', out)
+        local out, err = M.blame(repo, { file = dir .. '/does_not_exist.txt' })
+        assert.is_nil(out)
+        assert.is_string(err)
+        assert.is_true(#err > 0)
+    end)
+end)
+
+describe('git2.data blame command metadata', function()
+    it('allows zero or one file argument', function()
+        local blame
+        for _, subdata in ipairs(data) do
+            if subdata[0].name == 'blame' then
+                blame = subdata
+                break
+            end
+        end
+        assert.is_not_nil(blame)
+
+        local file_arg
+        for _, datum in ipairs(blame) do
+            if datum.name == 'file' then
+                file_arg = datum
+                break
+            end
+        end
+        assert.is_not_nil(file_arg)
+        assert.are.equal('?', file_arg.nargs)
+        assert.are.equal('%', file_arg.default)
+    end)
+end)
+
+describe('git2.nvim.blame inline toggle', function()
+    local original_vim
+    local original_collect
+    local state
+
+    before_each(function()
+        original_vim = _G.vim
+        original_collect = M.collect
+        state = {
+            extmarks = 0,
+            cleared = 0,
+            collect_calls = 0,
+            vars = {},
+            notifications = {},
+        }
+
+        _G.vim = {
+            api = {
+                nvim_create_namespace = function() return 1 end,
+                nvim_buf_clear_namespace = function()
+                    state.cleared = state.cleared + 1
+                    state.extmarks = 0
+                end,
+                nvim_buf_del_var = function(_, key)
+                    if state.vars[key] == nil then
+                        error('missing var')
+                    end
+                    state.vars[key] = nil
+                end,
+                nvim_buf_get_var = function(_, key)
+                    if state.vars[key] == nil then
+                        error('missing var')
+                    end
+                    return state.vars[key]
+                end,
+                nvim_buf_line_count = function() return 10 end,
+                nvim_buf_set_extmark = function()
+                    state.extmarks = state.extmarks + 1
+                    return state.extmarks
+                end,
+                nvim_buf_set_var = function(_, key, value)
+                    state.vars[key] = value
+                end,
+                nvim_get_current_buf = function() return 3 end,
+                nvim_buf_get_name = function() return '/tmp/repo/f' end,
+            },
+            fn = {
+                strdisplaywidth = function(text) return #text end,
+                fnamemodify = function(path) return path end,
+            },
+            log = {
+                levels = {
+                    WARN = 2,
+                },
+            },
+            notify = function(msg)
+                state.notifications[#state.notifications + 1] = msg
+            end,
+        }
+
+        M.collect = function()
+            state.collect_calls = state.collect_calls + 1
+            return {
+                hunks = {
+                    {
+                        start_line = 1,
+                        lines_in_hunk = 1,
+                        author = 'tester',
+                        date = '2026-09-21',
+                    },
+                },
+            }
+        end
+
+        package.loaded['git2.nvim.blame'] = nil
+    end)
+
+    after_each(function()
+        M.collect = original_collect
+        _G.vim = original_vim
+        package.loaded['git2.nvim.blame'] = nil
+    end)
+
+    it('toggles inline blame off on repeated show', function()
+        local inline = require 'git2.nvim.blame'
+
+        assert.is_true(inline.show({}, { bufnr = 3 }))
+        assert.are.equal(1, state.collect_calls)
+        assert.is_true(state.vars.git2_blame_is_loaded)
+        assert.are.equal(1, state.extmarks)
+
+        assert.is_false(inline.show({}, { bufnr = 3 }))
+        assert.are.equal(1, state.collect_calls)
+        assert.is_nil(state.vars.git2_blame_is_loaded)
+        assert.are.equal(0, state.extmarks)
     end)
 end)

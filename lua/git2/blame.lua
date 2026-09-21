@@ -1,6 +1,5 @@
 ---git blame
 local fs = require "vim.fs"
-local fn = require "vim.fn"
 local git2 = require "git2"
 local M = {}
 
@@ -46,27 +45,24 @@ local function format_date(t)
     return os.date("!%Y-%m-%d", t)
 end
 
----git blame <file>
----Mirrors `git blame -p`-ish compact output:
----  <abbrev7> (<author> <YYYY-MM-DD> <line_no>) <line content>
----@param repo userdata
----@param o { file: string, line_range?: string, first_parent?: boolean,
----mailmap?: boolean, ignore_whitespace?: boolean }?
----@return string blame text (empty string when nothing to show / file not found)
-function M.blame(repo, o)
-    o = o or {}
-    local file = o.file or fn.expand('%:p')
-    if file == '' then
-        return ''
-    end
+---@param file string
+---@return string relpath
+---@return string disk
+local function resolve_paths(repo, file)
     local root = repo:workdir() or repo:path() or ''
     local rel = fs.relpath(root, file)
     if rel == nil then
-        rel = file
+        return file, file
     end
-    -- Absolute path of the file inside the repo, used for reading content.
-    local disk = fs.joinpath(root, rel)
+    return rel, fs.joinpath(root, rel)
+end
 
+---@param o { first_parent?: boolean, mailmap?: boolean, ignore_whitespace?: boolean,
+---line_range?: string }
+---@param disk string
+---@return userdata
+local function build_options(o, disk)
+    o = o or {}
     local opts = git2.BlameOptions.init()
     local flags = 0
     if o.first_parent then
@@ -84,8 +80,6 @@ function M.blame(repo, o)
 
     local total = 0
     if o.line_range and o.line_range ~= '' then
-        -- count lines to bound the range. Falls back to disk if no buffer
-        -- is loaded (e.g. running from the plain-lua CLI).
         local fh = io.open(disk, 'r')
         if fh then
             for _ in fh:lines() do
@@ -97,14 +91,12 @@ function M.blame(repo, o)
         opts:set_min_line(min_l)
         opts:set_max_line(max_l)
     end
+    return opts
+end
 
-    local blame = git2.Blame.file(repo, rel, opts)
-    if blame == nil then
-        return ''
-    end
-
-    -- Read the file's lines so each blame line can be prefixed with its
-    -- content (like `git blame`).
+---@param disk string
+---@return string[]
+local function read_file_lines(disk)
     local file_lines = {}
     local fh = io.open(disk, 'r')
     if fh then
@@ -113,8 +105,31 @@ function M.blame(repo, o)
         end
         fh:close()
     end
+    return file_lines
+end
 
-    local lines = {}
+---Collect blame hunks for a single file.
+---@param repo userdata
+---@param o { file: string, line_range?: string, first_parent?: boolean,
+---mailmap?: boolean, ignore_whitespace?: boolean }?
+---@return table? blame_data
+---@return string? err
+function M.collect(repo, o)
+    o = o or {}
+    local file = o.file
+    if file == nil or file == '' then
+        return nil, 'No file to blame.'
+    end
+
+    local rel, disk = resolve_paths(repo, file)
+    local opts = build_options(o, disk)
+    local blame, err = git2.Blame.file(repo, rel, opts)
+    if blame == nil then
+        return nil, err
+    end
+
+    local file_lines = read_file_lines(disk)
+    local hunks = {}
     local hc = blame:count()
     for i = 0, hc - 1 do
         local hunk = blame:get_hunk_byindex(i)
@@ -125,13 +140,50 @@ function M.blame(repo, o)
         local lines_in_hunk = hunk:lines_in_hunk()
         local id = hunk:final_commit_id()
         local sig = hunk:final_signature()
-        local abbrev = id and tostring(id):sub(1, 7) or "0000000"
-        local author = sig and sig:name() or "unknown"
         local when = sig and (select(1, sig:when())) or 0
-        local date = format_date(when)
-        for l = start_l, start_l + lines_in_hunk - 1 do
-            local content = file_lines[l] or ""
-            table.insert(lines, ('%s (%s %s %d) %s'):format(abbrev, author, date, l, content))
+        hunks[#hunks + 1] = {
+            start_line = start_l,
+            lines_in_hunk = lines_in_hunk,
+            abbrev = id and tostring(id):sub(1, 7) or "0000000",
+            author = sig and sig:name() or "unknown",
+            when = when,
+            date = format_date(when),
+        }
+    end
+
+    return {
+        disk = disk,
+        rel = rel,
+        file_lines = file_lines,
+        hunks = hunks,
+    }
+end
+
+---git blame <file>
+---Mirrors `git blame -p`-ish compact output:
+---  <abbrev7> (<author> <YYYY-MM-DD> <line_no>) <line content>
+---@param repo userdata
+---@param o { file: string, line_range?: string, first_parent?: boolean,
+---mailmap?: boolean, ignore_whitespace?: boolean }?
+---@return string? blame text
+---@return string? err
+function M.blame(repo, o)
+    local data, err = M.collect(repo, o)
+    if data == nil then
+        return nil, err
+    end
+
+    local lines = {}
+    for _, hunk in ipairs(data.hunks) do
+        for l = hunk.start_line, hunk.start_line + hunk.lines_in_hunk - 1 do
+            local content = data.file_lines[l] or ""
+            table.insert(lines, ('%s (%s %s %d) %s'):format(
+                hunk.abbrev,
+                hunk.author,
+                hunk.date,
+                l,
+                content
+            ))
         end
     end
     return table.concat(lines, "\n")
