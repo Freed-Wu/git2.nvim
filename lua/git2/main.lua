@@ -1,15 +1,40 @@
----core functions. only expand path for neovim not shell.
+---core functions
+---@diagnostic disable: undefined-global
+-- luacheck: ignore 113
 local git2 = require "git2"
 local fs = require "vim.fs"
 local fn = require "vim.fn"
----@diagnostic disable: undefined-global
--- luacheck: ignore 113
 local Parser = require "mega.argparse".Parser
-local warn = require "git2.utils".warn
-
 local M = {}
 
----core function
+---get parser
+---@return table
+function M.get_parser()
+    local parser = Parser {
+        data = require "git2.data",
+        callback = M.exe
+    }
+    return parser
+end
+
+---**entry for git2**
+---@param argv string[]
+function M.main(argv)
+    local parser = M.get_parser()
+    parser:parse(argv)
+end
+
+---@param err string?
+function M.error(err)
+    if vim then
+        ---@diagnostic disable-next-line: redundant-parameter
+        vim.notify(err, vim.log.levels.ERROR, { title = "git2.nvim" })
+    else
+        error(err)
+    end
+end
+
+---core function. only expand path for neovim not shell.
 ---@param args table
 function M.exe(args)
     local repo_dir = fn.expand(args.C)
@@ -17,11 +42,11 @@ function M.exe(args)
     if args['rev-parse'] then
         if args.is_bare_repository then
             local repo, err = git2.Repository.open(repo_dir)
-            if repo == nil then
-                warn(('%s: %s'):format(repo_dir, err))
-                return
+            if repo then
+                print(repo:is_bare())
+            else
+                M.error(('%s: %s'):format(repo_dir, err))
             end
-            print(repo:is_bare())
         elseif args.show_toplevel then
             print(repo_dir)
         elseif args.git_dir or args.absolute_git_dir then
@@ -43,7 +68,7 @@ function M.exe(args)
     end
     local repo, err = git2.Repository.open(repo_dir)
     if repo == nil then
-        warn(('%s: %s'):format(repo_dir, err))
+        M.error(('%s: %s'):format(repo_dir, err))
         return
     end
     if args.status or args["ls-files"] then
@@ -104,7 +129,7 @@ function M.exe(args)
             ignore_whitespace = args.ignore_whitespace,
         })
         if data == nil then
-            warn(err)
+            M.error(err)
             return
         end
         if vim and args.file == '%' then
@@ -136,23 +161,6 @@ function M.exe(args)
         end
     end
     idx:write()
-end
-
----get parser
----@return table
-function M.get_parser()
-    local parser = Parser {
-        data = require "git2.data",
-        callback = M.exe
-    }
-    return parser
-end
-
----**entry for git2**
----@param argv string[]
-function M.main(argv)
-    local parser = M.get_parser()
-    parser:parse(argv)
 end
 
 return M
