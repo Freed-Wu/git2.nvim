@@ -145,6 +145,9 @@ function M.exe(args)
         if args.A then
             args.file = { repo_dir }
         end
+        for i, file in ipairs(args.file) do
+            args.file[i] = fn.expand(file)
+        end
         local arr = require 'git2.reset'.get_str_array(repo_dir, args.file)
         idx:add_all(arr, 0)
     elseif args.rm or args.reset then
