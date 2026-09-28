@@ -68,7 +68,11 @@ function M.render(bufnr, hunks)
         if hunk.lines_in_hunk > 1 then
             virt_text[3][1] = " │"
             for i = 1, hunk.lines_in_hunk - 2 do
-                vim.api.nvim_buf_set_extmark(bufnr, NS_ID, hunk.start_line + i - 1, 0, {
+                local line_num = hunk.start_line + i - 1
+                if line_num >= nlines or line_num < 0 then
+                    break
+                end
+                vim.api.nvim_buf_set_extmark(bufnr, NS_ID, line_num, 0, {
                     virt_text = virt_text,
                     virt_text_pos = "inline",
                     virt_text_repeat_linebreak = true,
@@ -77,12 +81,15 @@ function M.render(bufnr, hunks)
             end
 
             virt_text[3][1] = " ┘"
-            vim.api.nvim_buf_set_extmark(bufnr, NS_ID, hunk.start_line + hunk.lines_in_hunk - 2, 0, {
-                virt_text = virt_text,
-                virt_text_pos = "inline",
-                virt_text_repeat_linebreak = true,
-                priority = 1,
-            })
+            local last_line = hunk.start_line + hunk.lines_in_hunk - 2
+            if last_line < nlines and last_line >= 0 then
+                vim.api.nvim_buf_set_extmark(bufnr, NS_ID, last_line, 0, {
+                    virt_text = virt_text,
+                    virt_text_pos = "inline",
+                    virt_text_repeat_linebreak = true,
+                    priority = 1,
+                })
+            end
         end
     end
 
