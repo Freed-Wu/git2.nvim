@@ -11,17 +11,9 @@ version = 'scm-1'
 source = {
   url = description.homepage:gsub('https', 'git')
 }
-
-dependencies = { 'lua >= 5.1', 'mega.argparse', 'vim', 'luabitop', 'yaml', 'lua-git2-temp' }
 build = {
   type = 'builtin',
-  copy_directories = { 'scripts', 'plugin', 'autoload' },
-  install = {
-    bin = {
-      git2 = 'bin/git2',
-    },
-    conf = {
-      ['..'] = 'shell.nix',
-    },
-  },
+  copy_directories = { 'plugin', 'autoload' },
 }
+
+dependencies = { 'lua >= 5.1', 'mega.argparse', 'vim', 'luabitop', 'yaml', 'lua-git2-temp' }
