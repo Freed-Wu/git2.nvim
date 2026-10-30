@@ -16,20 +16,9 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        runs-on:
-          - ubuntu-latest
-          - macos-latest
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
-        if: runner.os == 'macOS'
-        run: |
-          brew install libgit2
-      - name: Install dependencies
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get -y update
           sudo apt-get -y install libgit2-dev
